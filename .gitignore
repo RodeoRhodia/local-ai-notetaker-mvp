@@ -23,3 +23,6 @@ __pycache__/
 
 # Recorded audio
 notes/
+
+# Local benchmark notes
+BENCHMARKS.md
