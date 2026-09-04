@@ -17,3 +17,9 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Python
+__pycache__/
+
+# Recorded audio
+notes/
