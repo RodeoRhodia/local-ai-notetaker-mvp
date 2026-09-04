@@ -1,8 +1,8 @@
 # Local AI Notetaker MVP
 
-Records whatever is playing through your Windows speakers and saves it as a 16 kHz mono WAV, ready for local transcription. Nothing leaves your machine.
+Records whatever is playing through your Windows speakers, then transcribes it locally with faster-whisper. Nothing leaves your machine except the one-time model download.
 
-Current phase: capture only. Transcription is next. See [docs/SPEC.md](docs/SPEC.md).
+Current phase: record-then-transcribe pipeline, done. See [docs/SPEC.md](docs/SPEC.md).
 
 ## Requirements
 
@@ -10,6 +10,7 @@ Current phase: capture only. Transcription is next. See [docs/SPEC.md](docs/SPEC
 - Windows Python 3.11+ on the Windows side, callable from WSL as `python.exe` (Microsoft Store Python works).
 - An enabled audio output device (speakers or headphones).
 - VLC or any audio player, to check the recording.
+- 8 GB RAM minimum, 16 GB recommended for the `large-v3-turbo` model.
 
 WSL itself has no audio devices. The script always runs with Windows Python; WSL is just where you type the commands.
 
@@ -30,18 +31,32 @@ REQ="$(wslpath -w "$PWD/requirements.txt")"
 ./start.sh
 ```
 
-Records 30 seconds of system audio, then exits. Pass a duration to change it:
+Records system audio until you press Enter, then transcribes it. Flags (passed through to `notetaker.py`):
 
-```bash
-./start.sh 60
-```
+- `--seconds N`: record a fixed length instead of until Enter.
+- `--model NAME`: whisper model to use (default `large-v3-turbo`; `tiny.en` is a fast sanity-check model).
+- `--wav PATH`: skip recording and transcribe an existing WAV.
+- `--no-transcribe`: record only.
 
-Ctrl+C stops early and still writes the file.
+Press Enter to stop recording and start transcription (Ctrl+C also works in most terminals). Ctrl+C during transcription cancels it and keeps the WAV; rerun with `--wav` to transcribe later.
+
+Transcription runs on the CPU with int8 weights. Rough speed on an Intel Core Ultra 7 155H: 3 to 5x real-time, so a 30-minute call takes several minutes to transcribe after you stop it. The first run with a given model downloads it from Hugging Face into `%USERPROFILE%\.cache\huggingface` (`large-v3-turbo` about 1.6 GB, `tiny.en` about 75 MB); internet is needed only for that download.
 
 ## Output
 
-`notes/raw/YYYY-MM-DD_HHMMSS.wav`, 16 kHz, mono, 16-bit PCM. The folder is created automatically on the first run and existing recordings are kept. The `notes/` folder is git-ignored.
+- `notes/raw/YYYY-MM-DD_HHMMSS.wav`: 16 kHz, mono, 16-bit PCM.
+- `notes/transcripts/YYYY-MM-DD_HHMMSS.md`: same timestamp, a `# Transcript <timestamp>` heading, a short metadata list (source WAV, model, audio duration, transcribe time, generated time), then one `[MM:SS - MM:SS] text` line per segment.
+
+Both folders are created automatically. The `notes/` folder is git-ignored.
 
 ## Verify
 
-Play any video, run `./start.sh`, then open the WAV in VLC. Speech should sound normal (correct pitch and speed). The console prints an RMS level; if it says SILENT, nothing was playing on the default output device.
+Play any video, run `./start.sh`, press Enter once you have a minute or two of speech, and check the printed transcript path. Open the transcript, then open the WAV in VLC to confirm the text matches what was said.
+
+## Limits
+
+- WASAPI loopback delivers no audio while nothing is playing, so silence is not recorded and transcript timestamps are audio time, not wall-clock time.
+- Transcription starts only after recording ends; there is no live output during the call.
+- Intel Arc / integrated GPUs are not used; CTranslate2 only accelerates on CPU or NVIDIA CUDA.
+- Surround output devices are downmixed with a flat average.
+- Your own microphone is not captured, only system output.
