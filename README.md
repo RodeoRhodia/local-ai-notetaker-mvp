@@ -40,7 +40,7 @@ Ctrl+C stops early and still writes the file.
 
 ## Output
 
-`notes/raw/YYYY-MM-DD_HHMM.wav`, 16 kHz, mono, 16-bit PCM. The `notes/` folder is git-ignored.
+`notes/raw/YYYY-MM-DD_HHMMSS.wav`, 16 kHz, mono, 16-bit PCM. The folder is created automatically on the first run and existing recordings are kept. The `notes/` folder is git-ignored.
 
 ## Verify
 
