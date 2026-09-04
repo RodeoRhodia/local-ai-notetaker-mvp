@@ -20,7 +20,8 @@ From a WSL shell:
 ```bash
 git clone https://github.com/RodeoRhodia/local-ai-notetaker-mvp.git
 cd local-ai-notetaker-mvp
-(cd /mnt/c && python.exe -m pip install --user -r "$(wslpath -w "$PWD")/requirements.txt")
+REQ="$(wslpath -w "$PWD/requirements.txt")"
+(cd /mnt/c && python.exe -m pip install --user -r "$REQ")
 ```
 
 ## Run
