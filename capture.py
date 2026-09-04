@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Record Windows system audio (WASAPI loopback) to a 16 kHz mono 16-bit WAV.
 
-Runs on Windows Python (python.exe). Output: notes/raw/YYYY-MM-DD_HHMM.wav
+Runs on Windows Python (python.exe). Output: notes/raw/YYYY-MM-DD_HHMMSS.wav
 """
 import argparse
 import time
@@ -68,7 +68,7 @@ def main() -> int:
     y = mono if rate == OUT_RATE else soxr.resample(mono, rate, OUT_RATE, quality="HQ")
     pcm = (np.clip(y, -1.0, 1.0) * 32767.0).astype(np.int16)
 
-    out = Path(__file__).resolve().parent / "notes" / "raw" / f"{datetime.now():%Y-%m-%d_%H%M}.wav"
+    out = Path(__file__).resolve().parent / "notes" / "raw" / f"{datetime.now():%Y-%m-%d_%H%M%S}.wav"
     out.parent.mkdir(parents=True, exist_ok=True)
     with wave.open(str(out), "wb") as w:
         w.setnchannels(1)
