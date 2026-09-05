@@ -53,6 +53,7 @@ def main() -> int:
     print(f"  Audio      : {rel(wav)}")
     if md is not None:
         print(f"  Transcript : {rel(md)}")
+        print("  Next       : ask your coding agent to refine it (see AGENTS.md)")
     return 0
 
 
