@@ -4,6 +4,7 @@
 Runs on Windows Python (python.exe). Output: notes/transcripts/<wav stem>.md
 """
 import argparse
+import os
 import time
 import wave
 from datetime import datetime
@@ -14,6 +15,9 @@ from faster_whisper import WhisperModel
 
 RATE = 16000
 REPO = Path(__file__).resolve().parent
+
+# Measured realtime factors on an Intel Core Ultra 7 155H, CPU int8.
+SPEED = {"large-v3-turbo": 2.4, "small.en": 7.0, "tiny.en": 13.0}
 
 
 def load_wav(wav: Path) -> np.ndarray:
@@ -46,6 +50,9 @@ def transcribe(wav: Path, model_name: str, out_dir: Path) -> Path:
     model = WhisperModel(model_name, device="cpu", compute_type="int8")
 
     print(f"Transcribing {wav.name} ({duration:.0f}s)...")
+    if model_name in SPEED:
+        eta = duration / SPEED[model_name]
+        print(f"  ETA about {eta:.0f}s (CPU, int8)")
     t0 = time.monotonic()
     segments, _info = model.transcribe(audio, language="en", beam_size=5, vad_filter=True)
     lines = []
@@ -63,7 +70,9 @@ def transcribe(wav: Path, model_name: str, out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"{wav.stem}.md"
     body = "\n".join(lines) if lines else "(no speech detected)"
-    out.write_text(
+    # Write to a temp file and rename so watch.py never sees a half-written transcript.
+    tmp = out.with_suffix(".md.tmp")
+    tmp.write_text(
         f"# Transcript {wav.stem}\n\n"
         f"- Source: {source}\n"
         f"- Model: {model_name} (cpu, int8)\n"
@@ -73,6 +82,7 @@ def transcribe(wav: Path, model_name: str, out_dir: Path) -> Path:
         f"{body}\n",
         encoding="utf-8",
     )
+    os.replace(tmp, out)
     print(f"Wrote    : {out}")
     print(f"  {len(lines)} segments in {elapsed:.1f}s ({duration / elapsed:.1f}x realtime)"
           if elapsed > 0 else f"  {len(lines)} segments")
